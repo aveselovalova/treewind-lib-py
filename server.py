@@ -16,32 +16,34 @@ class Hexagons():
         resp.status = falcon.HTTP_200
         credentials = json.loads(req.stream.read())
         body = json.loads(credentials["body"])
-        longitude = body["longitude"];
-        latitude = body["latitude"];
         wind_power = body["windPower"];
         offset = body["offset"];
         resolution = body["resolution"];
-        color = body["color"];
-
+        trees = body["trees"];
+        tic = time.perf_counter()
         wind = Wind();
-        polygon = wind.getWindLayerCoordinates(longitude, latitude, wind_power, offset)
-        geoJson = {
-            'type': 'Polygon',
-            'coordinates': [polygon]
-        }
+        trees_out = [];
+        for tree in trees:
+            longitude = tree["longitude"];
+            latitude = tree["latitude"];
+            color = tree["color"];
+            polygon = wind.getWindLayerCoordinates(longitude, latitude, wind_power, offset)
+            geoJson = {
+                'type': 'Polygon',
+                'coordinates': [polygon]
+            }
 
-        hexagons = h3.polyfill(geoJson, resolution)
-        
-        h3_index = h3.geo_to_h3(latitude, longitude, resolution);
-        trees = [];
-        for hex in hexagons:
-            direction = h3.h3_distance(h3_index, hex);
-            opacity = 255 - direction * (80 / wind_power);
-            if (opacity > 0):
-                trees.append({ 'opacity': direction, 'hex': hex, 'color': color });
-
+            hexagons = h3.polyfill(geoJson, resolution)
+            h3_index = h3.geo_to_h3(latitude, longitude, resolution);
+            for hex in hexagons:
+                direction = h3.h3_distance(h3_index, hex);
+                opacity = 255 - direction * (80 / wind_power);
+                if (opacity > 0):
+                    trees_out.append({ 'opacity': opacity, 'hex': hex, 'color': color });
+        toc = time.perf_counter()
+        print(f"Downloaded the tutorial in {(toc - tic)*1000:4f} ms")
         content = {
-            'hex': json.dumps(trees, default=serialize_sets)
+            'hex': json.dumps(trees_out, default=serialize_sets)
         }
 
         resp.body = json.dumps(content)
