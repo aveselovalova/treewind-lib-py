@@ -20,6 +20,8 @@ class Hexagons():
         latitude = body["latitude"];
         wind_power = body["windPower"];
         offset = body["offset"];
+        resolution = body["resolution"];
+        color = body["color"];
 
         wind = Wind();
         polygon = wind.getWindLayerCoordinates(longitude, latitude, wind_power, offset)
@@ -28,14 +30,18 @@ class Hexagons():
             'coordinates': [polygon]
         }
 
-        tic = time.perf_counter()
-        res = h3.polyfill(geoJson, body["resolution"])
-        toc = time.perf_counter()
-        print(res)
-        print(f"Downloaded the tutorial in {(toc - tic)*1000:4f} ms")
+        hexagons = h3.polyfill(geoJson, resolution)
+        
+        h3_index = h3.geo_to_h3(latitude, longitude, resolution);
+        trees = [];
+        for hex in hexagons:
+            direction = h3.h3_distance(h3_index, hex);
+            opacity = 255 - direction * (80 / wind_power);
+            if (opacity > 0):
+                trees.append({ 'opacity': direction, 'hex': hex, 'color': color });
 
         content = {
-            'hex': json.dumps(res, default=serialize_sets)
+            'hex': json.dumps(trees, default=serialize_sets)
         }
 
         resp.body = json.dumps(content)
