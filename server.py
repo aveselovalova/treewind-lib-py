@@ -59,4 +59,4 @@ api = falcon.API(middleware=[cors.middleware])
 
 hexagons = Hexagons()
 
-api.add_route('/hexagons', hexagons)
+api.add_route('/get-hexagons', hexagons)
